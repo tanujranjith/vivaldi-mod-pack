@@ -1504,6 +1504,22 @@ button.button-startpage:after { content: unset; }
   z-index: 5 !important;
 }
 
+/* Close button in accordion group header.
+   V4a switches .tab-header to display:flex, making V3's grid-column:4
+   a no-op. Explicit flex sizing seats the button at the trailing edge,
+   immediately after the stack-counter. Hover visibility (opacity 0→1,
+   pointer-events none→auto) is still provided by the V3 hover rule. */
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position:has(.tab:is(.tab-accordion, .tab-group)) .close,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position:has(.tab:is(.tab-accordion, .tab-group)) .close {
+  flex: 0 0 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  max-width: 16px !important;
+  margin-left: 4px !important;
+  align-self: center !important;
+}
+
 /* Anchor the coloured group indicator to the header row and let it show. */
 #browser.tabs-left #tabs-tabbar-container .resize .tab-position:has(.tab:is(.tab-accordion, .tab-group)),
 #browser.tabs-right #tabs-tabbar-container .resize .tab-position:has(.tab:is(.tab-accordion, .tab-group)) {
@@ -1511,14 +1527,10 @@ button.button-startpage:after { content: unset; }
   overflow: visible !important;
 }
 
-/* The native accordion toggle is its OWN sibling .tab-position
-   (.tab-position.accordion-toggle-arrow). The custom grid would otherwise
-   stretch it into a full-width 35px coloured row with a detached gap.
-   display:none drops it AND its grid track (no leftover spacer row).
-   Expand/collapse is preserved: Vivaldi auto-expands a stack when one of
-   its tabs is activated and auto-collapses on leaving it, and the chevron
-   below is the affordance. (A clickable CSS-only overlay isn't reliable
-   inside a display:contents grid, and UI mods are CSS-only — no JS hook.) */
+/* The accordion toggle arrow is a separate .tab-position Vivaldi injects
+   after expanded child tabs. display:none removes it from the grid entirely
+   (no leftover gap row). Expand/collapse works by clicking the group header
+   row (.tab-accordion) — Vivaldi's primary accordion control. */
 #browser.tabs-left  #tabs-tabbar-container .resize .tab-position.accordion-toggle-arrow,
 #browser.tabs-right #tabs-tabbar-container .resize .tab-position.accordion-toggle-arrow {
   display: none !important;
