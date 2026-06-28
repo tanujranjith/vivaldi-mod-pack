@@ -399,6 +399,17 @@ footer .toolbar-statusbar {
 #browser:not(.fullscreen) #webpage-stack {
     border-radius: var(--radius);
     margin: 0 5px 5px 5px;
+    overflow: hidden; /* clip the square page content to the rounded corners */
+}
+
+/* The web content itself (and its inner layers) paints square corners that
+   poke past #webpage-stack. Round + clip them so the page corners match. */
+#browser:not(.fullscreen) #webpage-stack .webpageview,
+#browser:not(.fullscreen) #webpage-stack .webpage,
+#browser:not(.fullscreen) #webview-container,
+#browser:not(.fullscreen) #webpage-stack webview {
+    border-radius: var(--radius);
+    overflow: hidden;
 }
 
 /* ======================= */
