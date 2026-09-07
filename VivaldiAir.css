@@ -1,9 +1,12 @@
-/* Vivaldi Air v.26
+/* Vivaldi Air v.27
 TODO: Suggestions?
 Fix sorting in panels
 Fix checkboxes
 Do translate menu
 
+v.27 : Tiled (split-screen) tabs sit side by side in the vertical tab bar
+       (V7 section, needs the tiled-tabs.js companion — Vivaldi exposes
+       no tiling marker on tab rows, so pure CSS cannot detect them).
 v.26 : Integrated compact vertical-tab enhancement —
        pinned tabs become a responsive favicon-only grid, normal tabs stay
        full-width rows, native Accordion tab stacks cascade inline as a
@@ -396,9 +399,23 @@ footer .toolbar-statusbar {
 
 /* INNER ROUND BORDERS */
 
+/* Flush on the right/bottom window edges (no accent-coloured gap there);
+   only the left keeps a small inset + rounding where it meets the tab bar.
+   Corner order: top-left, top-right, bottom-right, bottom-left. */
 #browser:not(.fullscreen) #webpage-stack {
-    border-radius: var(--radius);
-    margin: 0 5px 5px 5px;
+    border-radius: var(--radius) 0 0 0;
+    margin: 0 0 0 5px;
+    overflow: hidden; /* clip the square page content to the rounded corner */
+}
+
+/* The web content itself (and its inner layers) paints square corners that
+   poke past #webpage-stack. Round + clip them so the page corners match. */
+#browser:not(.fullscreen) #webpage-stack .webpageview,
+#browser:not(.fullscreen) #webpage-stack .webpage,
+#browser:not(.fullscreen) #webview-container,
+#browser:not(.fullscreen) #webpage-stack webview {
+    border-radius: var(--radius) 0 0 0;
+    overflow: hidden;
 }
 
 /* ======================= */
@@ -977,6 +994,9 @@ button.button-startpage:after { content: unset; }
      child tabs are indented under the coloured group header in the SAME
      column (no separate horizontal second strip). Header keeps its colour,
      title and tab-count badge.
+   - Tiled (split-screen) tabs share grid rows side by side (V7, needs
+     tiled-tabs.js — Vivaldi renders no tiling marker on tab rows, so
+     pure CSS cannot detect them).
    - Hibernated / discarded tabs grey ONLY their favicon.
    - Hover / active states reuse the Vivaldi Air glass look (var(--bg) +
      backdrop blur) — no hard-coded colours, so light & dark both work.
@@ -1483,7 +1503,7 @@ button.button-startpage:after { content: unset; }
   box-sizing: border-box !important;
 }
 
-/* De-fill the coloured header row so the pill (+ chevron) carry the colour,
+/* De-fill the coloured header row so the pill carries the colour,
    like Edge's group title. Overrides Vivaldi's solid
    `.tab-position.colored .tab:not(.active) { background: var(--stackColorBg) }`
    for the header only; children keep their faint tint below. */
@@ -1528,33 +1548,33 @@ button.button-startpage:after { content: unset; }
 }
 
 /* The accordion toggle arrow is a separate .tab-position Vivaldi injects
-   after expanded child tabs. display:none removes it from the grid entirely
-   (no leftover gap row). Expand/collapse works by clicking the group header
-   row (.tab-accordion) — Vivaldi's primary accordion control. */
-#browser.tabs-left  #tabs-tabbar-container .resize .tab-position.accordion-toggle-arrow,
-#browser.tabs-right #tabs-tabbar-container .resize .tab-position.accordion-toggle-arrow {
-  display: none !important;
+   after expanded child tabs. It is hidden ONLY while the JS companion
+   (accordion-autoclose.js) is active — the script adds an
+   `accordion-autoclose-on` class to <html> at load. Hiding it removes a
+   leftover gap row from the grid, and auto-collapse (JS) makes manual
+   toggling unnecessary. If the script is missing/wiped by an update, the
+   toggle stays visible so a stuck-open stack can still be collapsed by
+   hand - that is the fail-safe for the "group stays expanded" symptom.
+   NOTE: CSS reloads live but <script> mods only load at Vivaldi startup.
+   Right after updating these files you will briefly see slim chevron
+   rows (fallback below) with no auto-collapse — fully Exit + reopen
+   Vivaldi and they hide themselves once the script signals.
+   Expand/collapse natively works by clicking the toggle arrow, or by
+   double-clicking a tab (toggles the stay-open pin). */
+
+/* Fallback toggle look (no-JS): a slim chevron divider row instead of a
+   full-height blank row. Out-specifies the V3 35px height via the extra
+   class; the hide rule above still wins whenever the script is active. */
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).accordion-toggle-arrow,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).accordion-toggle-arrow {
+  height: 16px !important;
+  min-height: 16px !important;
+  max-height: 16px !important;
 }
 
-/* Decorative chevron on the LEFT of the group header, in the group colour.
-   It points RIGHT (collapsed indicator). In Vivaldi an expanded stack has
-   NO persistent header row (it is replaced by indented child rows), so the
-   chevron only ever shows on a COLLAPSED group. Decoration only; never
-   blocks clicks. */
-#browser.tabs-left  #tabs-tabbar-container .resize .tab-position:has(.tab:is(.tab-accordion, .tab-group)) .tab-header::after,
-#browser.tabs-right #tabs-tabbar-container .resize .tab-position:has(.tab:is(.tab-accordion, .tab-group)) .tab-header::after {
-  content: "" !important;
-  order: -1 !important;                 /* move chevron to the LEFT */
-  flex: 0 0 auto !important;
-  width: 0 !important;
-  height: 0 !important;
-  margin: 0 5px 0 1px !important;
-  border-top: 4.5px solid transparent !important;
-  border-right: 0 !important;
-  border-bottom: 4.5px solid transparent !important;
-  border-left: 6px solid var(--stackColorBg, currentColor) !important;
-  opacity: 0.95 !important;
-  pointer-events: none !important;
+html.accordion-autoclose-on #browser.tabs-left  #tabs-tabbar-container .resize .tab-position.accordion-toggle-arrow,
+html.accordion-autoclose-on #browser.tabs-right #tabs-tabbar-container .resize .tab-position.accordion-toggle-arrow {
+  display: none !important;
 }
 
 /* V4b. CHILD rows — compact, indented, cascading under the header. */
@@ -1612,6 +1632,54 @@ button.button-startpage:after { content: unset; }
 #browser.tabs-right #tabs-tabbar-container .resize .tab-position.colored .tab.tab-in-accordion:not(.active) {
   background-color: color-mix(in srgb, var(--stackColorBg) var(--vpg-group-child-tint), transparent) !important;
   color: inherit !important;
+}
+
+/* V4c. Named group label while expanded.
+   Native Accordion mode replaces the named group-header row with child rows
+   as soon as a child is opened. accordion-autoclose.js reads the saved
+   `fixedGroupTitle` metadata and marks the first child of a renamed group;
+   reserve a compact label band above that child so the group name persists
+   instead of appearing to become whichever child was last active. */
+:root {
+  --vpg-accordion-group-label-height: 23px;
+}
+
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first {
+  position: relative !important;
+  overflow: visible !important;
+  height: calc(var(--vpg-accordion-child-height) + var(--vpg-accordion-group-label-height)) !important;
+  min-height: calc(var(--vpg-accordion-child-height) + var(--vpg-accordion-group-label-height)) !important;
+  max-height: calc(var(--vpg-accordion-child-height) + var(--vpg-accordion-group-label-height)) !important;
+}
+
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).vpg-accordion-named-group-first .tab,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).vpg-accordion-named-group-first .tab {
+  margin-top: var(--vpg-accordion-group-label-height) !important;
+}
+
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first::before,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first::before {
+  content: attr(data-vpg-group-title) !important;
+  position: absolute !important;
+  z-index: 3 !important;
+  top: 1px !important;
+  left: 10px !important;
+  right: 8px !important;
+  height: calc(var(--vpg-accordion-group-label-height) - 3px) !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 9px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  border-radius: 999px !important;
+  background: var(--stackColorBg, var(--colorBgDarker)) !important;
+  color: var(--stackColorFg, var(--colorFg)) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
 }
 
 
@@ -1696,8 +1764,53 @@ button.button-startpage:after { content: unset; }
   -webkit-backdrop-filter: var(--blurMedHigh) !important;
 }
 
+/* -----------------------------------------------------------------
+   V7. TILED (split-screen) TABS — SIDE BY SIDE
+
+   Tabs currently shown split-screen (Page Tiling) share grid rows —
+   sitting next to each other like the pinned favicon tiles — instead
+   of each taking a full-width row. Untiled tabs are untouched.
+
+   Requires the JS companion tiled-tabs.js: Vivaldi renders NO tiling
+   marker on tab-strip rows (no pure-CSS hook exists), so the script
+   tags each tiled tab's row with .is-tiled (see its header comment
+   for the mapping). Without the script this section matches nothing.
+
+   Behaviour notes:
+   - Tiled tabs that are ADJACENT in the strip share one row, mirroring
+     their on-screen pairing. A lone / separated tiled tab takes a
+     compact slice of its own row instead of stretching full width.
+   - Pinned tabs are excluded (they already live in the favicon grid).
+   - Tiled tabs inside an open accordion stack keep their indent/rail
+     and additionally share rows.
+   ----------------------------------------------------------------- */
+:root {
+  --vpg-tiled-span: 2;                 /* grid tracks per tiled tab      */
+  --vpg-tiled-font-size: 11px;         /* compact title in narrow cell   */
+  --vpg-tiled-ring: color-mix(in srgb, var(--colorHighlightBg) 55%, transparent);
+}
+
+/* Share a row: out-specifies the V3 full-width (1 / -1) rule via the
+   extra .is-tiled class (same :not() chain + one). */
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).is-tiled,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).is-tiled {
+  grid-column: auto / span var(--vpg-tiled-span) !important;
+}
+
+/* Compact title so it reads in the narrow cell. */
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).is-tiled .title,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).is-tiled .title {
+  font-size: var(--vpg-tiled-font-size) !important;
+}
+
+/* Tile ring so tiled pairs read as one split group at a glance. */
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).is-tiled .tab-wrapper,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).is-tiled .tab-wrapper {
+  box-shadow: inset 0 0 0 1px var(--vpg-tiled-ring) !important;
+}
+
 /* =================================================================
-   END VERTICAL TABS — PINNED FAVICON GRID + WATERFALL GROUPS
+   END VERTICAL TABS — PINNED FAVICON GRID + WATERFALL GROUPS + TILED PAIRS
    ================================================================= */
 
 
