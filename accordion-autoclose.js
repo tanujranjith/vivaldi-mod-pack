@@ -80,8 +80,10 @@
 
   /* Vivaldi replaces an expanded accordion stack's named header with its
      child rows. The saved name is still present in each child's tab metadata
-     (`vivExtData.fixedGroupTitle`), but it is not rendered. Stamp it onto the
-     first child so the CSS can draw a stable group label above that row.
+     (`vivExtData.fixedGroupTitle`), but it is not rendered. Stamp the first
+     child so CSS can insert a label as a normal flex item above that tab.
+     Keeping the label in layout flow — rather than absolutely positioning it
+     over the child — guarantees that the first tab is never covered.
 
      chrome.tabs.query returns the same tab metadata Vivaldi's own UI uses.
      Some Vivaldi versions serialize vivExtData as JSON, so accept both forms.
@@ -96,16 +98,21 @@
         return;
       }
 
+      const groupsById = new Map();
       const groupsByTabId = new Map();
       for (const tab of tabs || []) {
         const metadata = readVivaldiMetadata(tab);
         const groupId = metadata.group;
         const title = metadata.fixedGroupTitle;
         if (groupId && typeof title === "string" && title.trim()) {
-          groupsByTabId.set(String(tab.id), {
-            groupId: String(groupId),
-            title: title.trim(),
-          });
+          const key = String(groupId);
+          let group = groupsById.get(key);
+          if (!group) {
+            group = { groupId: key, title: title.trim(), count: 0 };
+            groupsById.set(key, group);
+          }
+          group.count++;
+          groupsByTabId.set(String(tab.id), group);
         }
       }
 
@@ -126,7 +133,7 @@
 
         row.classList.toggle("vpg-accordion-named-group-first", shouldLabel);
         if (shouldLabel) {
-          row.dataset.vpgGroupTitle = group.title;
+          row.dataset.vpgGroupTitle = `${group.title} · ${group.count}`;
           row.dataset.vpgGroupId = group.groupId;
         } else {
           delete row.dataset.vpgGroupTitle;
