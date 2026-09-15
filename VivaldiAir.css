@@ -1652,10 +1652,14 @@ button.button-startpage:after { content: unset; }
 #browser.tabs-right #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first::before {
   content: attr(data-vpg-group-title) !important;
   position: absolute !important;
-  left: 0 !important;
+  /* Match the child tab's content inset, then size only to the text. The
+     17px reserved row remains full-width; just the visible title becomes
+     the same compact pill language as a collapsed group header. */
+  left: calc(10px + var(--vpg-accordion-indent)) !important;
   top: calc(-1 * var(--vpg-accordion-group-label-height)) !important;
   z-index: 6 !important;
-  width: 100% !important;
+  width: fit-content !important;
+  max-width: calc(100% - 18px - var(--vpg-accordion-indent)) !important;
   height: var(--vpg-accordion-group-label-height) !important;
   display: flex !important;
   align-items: center !important;
