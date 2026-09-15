@@ -1547,33 +1547,24 @@ button.button-startpage:after { content: unset; }
   overflow: visible !important;
 }
 
-/* The accordion toggle arrow is a separate .tab-position Vivaldi injects
-   after expanded child tabs. It is hidden ONLY while the JS companion
-   (accordion-autoclose.js) is active — the script adds an
-   `accordion-autoclose-on` class to <html> at load. Hiding it removes a
-   leftover gap row from the grid, and auto-collapse (JS) makes manual
-   toggling unnecessary. If the script is missing/wiped by an update, the
-   toggle stays visible so a stuck-open stack can still be collapsed by
-   hand - that is the fail-safe for the "group stays expanded" symptom.
-   NOTE: CSS reloads live but <script> mods only load at Vivaldi startup.
-   Right after updating these files you will briefly see slim chevron
-   rows (fallback below) with no auto-collapse — fully Exit + reopen
-   Vivaldi and they hide themselves once the script signals.
-   Expand/collapse natively works by clicking the toggle arrow, or by
-   double-clicking a tab (toggles the stay-open pin). */
-
-/* Fallback toggle look (no-JS): a slim chevron divider row instead of a
-   full-height blank row. Out-specifies the V3 35px height via the extra
-   class; the hide rule above still wins whenever the script is active. */
+/* Vivaldi renders a separate .tab-position.accordion-toggle-arrow after an
+   accordion stack. In this layout it is only a blank divider with a small
+   chevron, so never reserve a row for it. This is intentionally independent
+   of accordion-autoclose.js: Vivaldi updates replace window.html and can
+   temporarily remove injected scripts, but the CSS mod should not regress
+   into one empty bar per group as a result. The JS companion can still
+   dispatch its native click against this hidden element. */
 #browser.tabs-left #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).accordion-toggle-arrow,
 #browser.tabs-right #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).accordion-toggle-arrow {
-  height: 16px !important;
-  min-height: 16px !important;
-  max-height: 16px !important;
+  display: none !important;
 }
 
-html.accordion-autoclose-on #browser.tabs-left  #tabs-tabbar-container .resize .tab-position.accordion-toggle-arrow,
-html.accordion-autoclose-on #browser.tabs-right #tabs-tabbar-container .resize .tab-position.accordion-toggle-arrow {
+/* Counter Detection is Vivaldi's separate, page-provided notification
+   counter (.button-badge). On a group header it reads as a second tab count
+   beside .stack-counter (for example, "SAT 4 2"). Keep those notifications
+   on individual tabs, but omit the duplicate-looking group-header copy. */
+#browser.tabs-left #tabs-tabbar-container .resize .tab:is(.tab-accordion, .tab-group) .button-badge,
+#browser.tabs-right #tabs-tabbar-container .resize .tab:is(.tab-accordion, .tab-group) .button-badge {
   display: none !important;
 }
 
