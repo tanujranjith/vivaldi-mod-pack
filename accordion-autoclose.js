@@ -80,10 +80,12 @@
 
   /* Vivaldi replaces an expanded accordion stack's named header with its
      child rows. The saved name is still present in each child's tab metadata
-     (`vivExtData.fixedGroupTitle`), but it is not rendered. Stamp the first
-     child so CSS can insert a label as a normal flex item above that tab.
-     Keeping the label in layout flow — rather than absolutely positioning it
-     over the child — guarantees that the first tab is never covered.
+     (`vivExtData.fixedGroupTitle`), but it is not rendered. Stamp every
+     child in a named group and identify its first child. CSS can then shift
+     the complete child run into the native toggle slot Vivaldi already
+     reserves, leaving a dedicated label-sized space above the first tab.
+     This avoids extending one virtualized row (which covers its first tab)
+     or injecting a sibling that Vivaldi's absolute-positioned list ignores.
 
      chrome.tabs.query returns the same tab metadata Vivaldi's own UI uses.
      Some Vivaldi versions serialize vivExtData as JSON, so accept both forms.
@@ -129,8 +131,13 @@
         const isFirstChild = Boolean(
           tab && tab.classList.contains("tab-first-in-group")
         );
-        const shouldLabel = Boolean(group && isFirstChild);
+        const isNamedGroupChild = Boolean(group && tab);
+        const shouldLabel = Boolean(isNamedGroupChild && isFirstChild);
 
+        row.classList.toggle(
+          "vpg-accordion-named-group-child",
+          isNamedGroupChild
+        );
         row.classList.toggle("vpg-accordion-named-group-first", shouldLabel);
         if (shouldLabel) {
           row.dataset.vpgGroupTitle = `${group.title} · ${group.count}`;

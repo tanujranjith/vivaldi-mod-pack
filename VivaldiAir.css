@@ -1626,42 +1626,35 @@ button.button-startpage:after { content: unset; }
 }
 
 /* V4c. Named group label while expanded.
-   Native Accordion mode replaces the named group-header row with child rows
-   as soon as a child is opened. accordion-autoclose.js marks the first child
-   of a renamed group. The generated label below is a flex item in that row,
-   so it occupies its own space instead of overlaying the first tab. */
+   Vivaldi absolutely positions its virtual tab rows, so increasing the first
+   child's height (or injecting a sibling) cannot push later rows down. That
+   is what let the label cover the first tab. Vivaldi does reserve a compact
+   native accordion-toggle slot after every expanded group. The JS companion
+   marks each child in a named group; moving that whole run down by precisely
+   one toggle slot makes a real label-sized space at the start and lets the
+   final child occupy the otherwise-hidden toggle slot. No tab is covered and
+   no spacer row is added. */
 :root {
-  --vpg-accordion-group-label-height: 22px;
-  --vpg-accordion-group-label-gap: 3px;
+  /* Vivaldi's vertical accordion toggle is 16px plus its mandatory 1px
+     list spacing (verified in bundle.js), so use the full 17px virtual
+     slot rather than leaving a one-pixel seam after the last child. */
+  --vpg-accordion-group-label-height: 17px;
 }
 
-#browser.tabs-left #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first,
-#browser.tabs-right #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  gap: var(--vpg-accordion-group-label-gap) !important;
-  overflow: hidden !important;
-  height: calc(var(--vpg-accordion-child-height) + var(--vpg-accordion-group-label-height) + var(--vpg-accordion-group-label-gap)) !important;
-  min-height: calc(var(--vpg-accordion-child-height) + var(--vpg-accordion-group-label-height) + var(--vpg-accordion-group-label-gap)) !important;
-  max-height: calc(var(--vpg-accordion-child-height) + var(--vpg-accordion-group-label-height) + var(--vpg-accordion-group-label-gap)) !important;
-}
-
-#browser.tabs-left #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).vpg-accordion-named-group-first .tab,
-#browser.tabs-right #tabs-tabbar-container .resize .tab-position:not(.is-pinned):not(.pinned):not([pinned]).vpg-accordion-named-group-first .tab {
-  flex: 0 0 var(--vpg-accordion-child-height) !important;
-  width: 100% !important;
-  height: var(--vpg-accordion-child-height) !important;
-  min-height: var(--vpg-accordion-child-height) !important;
-  max-height: var(--vpg-accordion-child-height) !important;
-  margin: 0 !important;
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-child,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-child {
+  /* `translate` composes with Vivaldi's inline `transform`, preserving its
+     virtual-list positioning while moving both the pixels and hit target. */
+  translate: 0 var(--vpg-accordion-group-label-height) !important;
 }
 
 #browser.tabs-left #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first::before,
 #browser.tabs-right #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first::before {
   content: attr(data-vpg-group-title) !important;
-  flex: 0 0 var(--vpg-accordion-group-label-height) !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: calc(-1 * var(--vpg-accordion-group-label-height)) !important;
+  z-index: 6 !important;
   width: 100% !important;
   height: var(--vpg-accordion-group-label-height) !important;
   display: flex !important;
@@ -1676,8 +1669,12 @@ button.button-startpage:after { content: unset; }
   color: var(--stackColorFg, var(--colorFg)) !important;
   font-size: 11px !important;
   line-height: 1 !important;
-  order: -1 !important;
   pointer-events: none !important;
+}
+
+#browser.tabs-left #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first,
+#browser.tabs-right #tabs-tabbar-container .resize .tab-position.vpg-accordion-named-group-first {
+  overflow: visible !important;
 }
 
 
